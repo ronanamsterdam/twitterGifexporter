@@ -1,6 +1,8 @@
 
 import { logger }     from '~/app/configs/runtime/logger';
 
+import fs from 'fs';
+
 import express from 'express';
 const router =  express.Router();
 
@@ -29,7 +31,20 @@ router.get('/', async (req, res) => {
     logger.info('Some request on /');
     try {
       await processAssetController.processTwitterGifUrl({url});
-      res.status(200).send(`Hola amigo ${url}`);
+
+      var filePath = './octocat.gif';
+      var stat = fs.statSync(filePath);
+
+      res.writeHead(200, {
+          'Content-Type': 'image/gif',
+          'Content-Length': stat.size
+      });
+
+      var readStream = fs.createReadStream(filePath);
+      // We replaced all the event handlers with a simple call to readStream.pipe()
+      readStream.pipe(res);
+
+      // res.status(200).send(`Hola amigo ${url}`);
     } catch (e) {
         errorResp({res, code:500, e, _in: '/process/'});
     }
