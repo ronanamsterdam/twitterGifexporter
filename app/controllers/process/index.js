@@ -1,11 +1,9 @@
-import fetch from 'node-fetch';
-import fs from 'fs';
-import path from 'path';
-import gify from 'gify';
-import htmlparser from 'htmlparser2';
-const puppeteer = require('puppeteer');
-import {handleSuccessError} from '~/app/controllers/utils';
-import { logger }     from '~/app/configs/runtime/logger';
+import fetch        from 'node-fetch';
+import fs           from 'fs';
+import gify         from 'gify';
+import puppeteer    from 'puppeteer';
+import { logger }   from '~/app/configs/runtime/logger';
+import config       from '~/app/configs/env'
 
 import {insufficientParamsReject} from '~/app/controllers/utils';
 
@@ -14,15 +12,21 @@ export default class ProcessAssetController {
       page = null
 
       beforeAll = async () => {
-
+        // headless chrome does NO support html5 vide :\
         const headless = false;
         let pappeteerAdditionalConf = {};
         if (!headless) {
             pappeteerAdditionalConf = {
+              devtools: false
+            }
+
+            if (config.chromePath) {
+
+              pappeteerAdditionalConf = {
                 ...pappeteerAdditionalConf,
-                // slowMo: !headless ? 150 : 0,
-                executablePath: "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome",
-            };
+                executablePath: config.chromePath
+              }
+            }
         }
 
         this.browser = await puppeteer.launch({
@@ -37,8 +41,8 @@ export default class ProcessAssetController {
         if (!headless) {
             this.page.emulate({
                 viewport: {
-                    width: 20,
-                    height: 20
+                    width: 50,
+                    height: 50
                 },
                 userAgent: ''
             });
@@ -56,18 +60,16 @@ export default class ProcessAssetController {
         await this.beforeAll();
 
         await this.page.goto(url);
-
         await this.page.waitForSelector('video');
-
         const videoSrc = await this.page.evaluate(() =>  document.querySelector('video') && document.querySelector('video').src) || "";
+
+        await this.afterAll();
 
         console.log(videoSrc);
 
         if (videoSrc) {
-          await this.processUrl(videoSrc);
+          return await this.processUrl(videoSrc);
         }
-
-        await this.afterAll();
 
         return videoSrc;
       }
@@ -83,40 +85,43 @@ export default class ProcessAssetController {
       var input = './octocat.mp4';
       var output = './octocat.gif';
 
-      const receiptResp = await fetch(mp4Url)
+      return fetch(mp4Url)
       .then(async (res) => {
         return await new Promise((resolve, reject) => {
           res.body.pipe(fileStream);
           res.body.on("error", (err) => {
+            debugger;
             reject(err);
           });
-          fileStream.on("finish", function() {
+          fileStream.on("finish", () => {
             gify(input, output, function(err){
               if (err) {
                 reject(err);
+              } else {
+                fileStream.close();
+                fileStream.destroy()
+                resolve({
+                  fileStream: fs.createReadStream(output),
+                  fileSize:   fs.statSync(output).size,
+                  filePath:   output
+                });
+
+                // deleting input file after it's been used
+                fs.unlink(input, (err) => {
+                  if (err) {
+                    logger.error(`[processUrl] Error deleting file ${input}: ` + err);
+                  }
+                  logger.info(`[processUrl] File ${input} deleted: `);
+                });
               }
             });
-            resolve();
           });
         });
       })
       .catch(error => {
+        debugger;
         logger.error(`[processUrl] shit happened ${mp4Url}: ${JSON.stringify(error)}`);
         return error;
       });
     }
-
-    download = function (url, dest, cb) {
-      var file = fs.createWriteStream(dest);
-      var request = http.get(url, function(response) {
-        debugger;
-        // response.pipe(file);
-        // file.on('finish', function() {
-        //   file.close(cb);  // close() is async, call cb after close completes.
-        // });
-      }).on('error', function(err) { // Handle errors
-        fs.unlink(dest); // Delete the file async. (But we don't check the result)
-        if (cb) cb(err.message);
-      });
-    };
 }

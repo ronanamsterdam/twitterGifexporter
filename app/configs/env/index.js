@@ -28,6 +28,8 @@ config.secrets = {
     token:              process.env.TOKEN_SECRET                || 'local token',
 };
 
+config.chromePath = process.env.APP_CHROME_PATH || ""
+
 config.expireTimes = {
     // in milliseconds
     token: process.env.TOKEN_EXPIRE_TIME || 7 * 24 * 60 * 60 * 1000,

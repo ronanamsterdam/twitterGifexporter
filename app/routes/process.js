@@ -30,23 +30,30 @@ router.get('/', async (req, res) => {
   if (url) {
     logger.info('Some request on /');
     try {
-      await processAssetController.processTwitterGifUrl({url});
+      const {fileStream, fileSize, filePath} = await processAssetController.processTwitterGifUrl({url});
 
-      var filePath = './octocat.gif';
-      var stat = fs.statSync(filePath);
+      if (fileStream) {
+        res.writeHead(200, {
+            'Content-Type': 'image/gif',
+            'Content-Length': fileSize
+        });
+        fileStream.pipe(res);
 
-      res.writeHead(200, {
-          'Content-Type': 'image/gif',
-          'Content-Length': stat.size
-      });
+        fileStream.on("end", () => {
+          // deleting output file after it's been used
+          fs.unlink(filePath, (err) => {
+            if (err) {
+              logger.error(`[/process] Error deleting file ${filePath}: ` + err);
+            }
+            logger.info(`[/process] File ${filePath} deleted: `);
+          });
+        });
 
-      var readStream = fs.createReadStream(filePath);
-      // We replaced all the event handlers with a simple call to readStream.pipe()
-      readStream.pipe(res);
-
-      // res.status(200).send(`Hola amigo ${url}`);
+      } else {
+        res.status(403).send(`[/process]Failed. Something is odd with that url.`);
+      }
     } catch (e) {
-        errorResp({res, code:500, e, _in: '/process/'});
+        errorResp({res, code:500, e, _in: '/process'});
     }
   } else {
       errorResp({res});
