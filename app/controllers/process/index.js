@@ -1,71 +1,37 @@
 import fetch        from 'node-fetch';
 import fs           from 'fs';
 import gify         from 'gify';
-import puppeteer    from 'puppeteer';
 import { logger }   from '~/app/configs/runtime/logger';
 import config       from '~/app/configs/env'
 
 import {insufficientParamsReject} from '~/app/controllers/utils';
 
 export default class ProcessAssetController {
-      browser = null
-      page = null
-
-      beforeAll = async () => {
-        // headless chrome does NO support html5 vide :\
-        const headless = false;
-        let pappeteerAdditionalConf = {};
-        if (!headless) {
-            pappeteerAdditionalConf = {
-              devtools: false
-            }
-
-            if (config.chromePath) {
-
-              pappeteerAdditionalConf = {
-                ...pappeteerAdditionalConf,
-                executablePath: config.chromePath
-              }
-            }
-        }
-
-        this.browser = await puppeteer.launch({
-            headless,
-            args:       ['--no-sandbox', '--disable-setuid-sandbox'],
-            devtools:   !headless,
-            ...pappeteerAdditionalConf,
-        });
-
-        this.page = await this.browser.newPage();
-
-        if (!headless) {
-            this.page.emulate({
-                viewport: {
-                    width: 50,
-                    height: 50
-                },
-                userAgent: ''
-            });
-        }
-    }
-
-    afterAll = () => {
-      this.browser.close();
-    }
-
     processTwitterGifUrl = async ({url}) => {
 
       if (url) {
 
-        await this.beforeAll();
+        logger.info(`[processTwitterGifUrl] `+
+        `Getting videoSrc from url: ${url}`);
 
-        await this.page.goto(url);
-        await this.page.waitForSelector('video');
-        const videoSrc = await this.page.evaluate(() =>  document.querySelector('video') && document.querySelector('video').src) || "";
+        const Nightmare = require("nightmare")
+        const nightmare = Nightmare();
 
-        await this.afterAll();
+        const videoSrc = await new Promise((res, rej) => {
+          nightmare
+          .goto(url)
+          .wait('video')
+          .evaluate(() => document.querySelector('video').src)
+          .end()
+          .then(res)
+          .catch(_error => {
+            logger.error(_error);
+            debugger;
+            return rej(_error);
+          })
+        });
 
-        console.log(videoSrc);
+        logger.info("got videoSrc: ", videoSrc);
 
         if (videoSrc) {
           return await this.processUrl(videoSrc);
@@ -81,9 +47,12 @@ export default class ProcessAssetController {
       logger.info(`[processUrl] `+
       `Getting video: ${mp4Url}`);
 
-      const fileStream = fs.createWriteStream('./octocat.mp4');
-      var input = './octocat.mp4';
-      var output = './octocat.gif';
+      const salt = new Date().getTime();
+
+      const fileStream = fs.createWriteStream(`./${salt}.mp4`);
+
+      var input = `./${salt}.mp4`;
+      var output = `./${salt}.gif`;
 
       return fetch(mp4Url)
       .then(async (res) => {
