@@ -1,4 +1,9 @@
 # twitterGifexporter
+
+check it out here -> https://twitter-gif-web.herokuapp.com/
+
+API for: https://github.com/ronanamsterdam/twitterGifExporter-web
+
 Exports from twitter's video `gif` in to actual .gif
 
 you'll need to:
