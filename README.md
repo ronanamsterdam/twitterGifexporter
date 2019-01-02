@@ -12,4 +12,9 @@ you'll need to:
 2. ```brew install ffmpeg graphicsmagick```
 4. ```npm dev``` or ```npm start```
 
+Or:
+
+1. `docker build your-thing .`
+2. `docker run your-thing`
+
 But most importantly remember: Not every GIF is a JIF ☝️
