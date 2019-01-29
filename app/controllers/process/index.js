@@ -54,17 +54,23 @@ export default class ProcessAssetController {
       var input = `./${salt}.mp4`;
       var output = `./${salt}.gif`;
 
+      // TODO: todo -> check file size first and abandon it if it's too_big
+      // TODO: measure what it too_big
+
       return fetch(mp4Url)
       .then(async (res) => {
         return await new Promise((resolve, reject) => {
           res.body.pipe(fileStream);
           res.body.on("error", (err) => {
-            debugger;
+            logger.info(`[processUrl] `+
+            `error happened :(  ${err}`);
             reject(err);
           });
           fileStream.on("finish", () => {
             gify(input, output, function(err){
               if (err) {
+                logger.info(`[processUrl] `+
+                `gify error happened :(  ${err}`);
                 reject(err);
               } else {
                 fileStream.close();
@@ -75,12 +81,15 @@ export default class ProcessAssetController {
                   filePath:   output
                 });
 
+                logger.info(`[processUrl] `+
+                `unlinking video...`);
+
                 // deleting input file after it's been used
                 fs.unlink(input, (err) => {
                   if (err) {
-                    logger.error(`[processUrl] Error deleting file ${input}: ` + err);
+                    logger.error(`[processUrl] Error deleting video file ${input}: ` + err);
                   }
-                  logger.info(`[processUrl] File ${input} deleted: `);
+                  logger.info(`[processUrl] Video File ${input} deleted: `);
                 });
               }
             });

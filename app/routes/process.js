@@ -28,9 +28,12 @@ const processAssetController = new ProcessAssetController();
 router.get('/', async (req, res) => {
   const { url } = req.query;
   if (url) {
-    logger.info('Some request on /');
+    logger.info('[/process] incoming request');
     try {
       const {fileStream, fileSize, filePath} = await processAssetController.processTwitterGifUrl({url});
+
+      logger.info(`[/process] `+
+      `processing done. Straming back...`);
 
       if (fileStream) {
         res.writeHead(200, {
@@ -41,11 +44,12 @@ router.get('/', async (req, res) => {
 
         fileStream.on("end", () => {
           // deleting output file after it's been used
+          // TODO: delete by timeout if streaming taking too long
           fs.unlink(filePath, (err) => {
             if (err) {
-              logger.error(`[/process] Error deleting file ${filePath}: ` + err);
+              logger.error(`[/process] Error deleting Gif file ${filePath}: ` + err);
             }
-            logger.info(`[/process] File ${filePath} deleted: `);
+            logger.info(`[/process] Gif File ${filePath} deleted: `);
           });
         });
 
