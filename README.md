@@ -1,6 +1,6 @@
 # twitterGifexporter
 
-check it out here -> https://twitterclient-master-twittergifdepl.web.kintohub.com/
+check it out here -> https://twitterwebapp-f485f-e2294.web.beta.kintohub.com/
 
 API for: https://github.com/ronanamsterdam/twitterGifExporter-web
 
