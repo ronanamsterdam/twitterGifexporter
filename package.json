@@ -45,7 +45,7 @@
     "morgan": "1.9.1",
     "morgan-body": "2.4.5",
     "nightmare": "3.0.1",
-    "node-fetch": "2.3.0",
+    "node-fetch": "2.6.1",
     "winston": "3.1.0",
     "winston-daily-rotate-file": "3.5.1"
   },
